@@ -1,0 +1,7 @@
+name: VillagerMinigame
+version: '0.17'
+main: org.tnd1dks.villagerMinigame.VillagerMinigame
+api-version: '1.21'
+
+commands:
+  minigame:
