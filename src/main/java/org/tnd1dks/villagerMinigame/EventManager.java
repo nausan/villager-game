@@ -7,12 +7,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -52,6 +56,7 @@ public class EventManager implements Listener
 
     @EventHandler
     public void OnPlayerDeath(PlayerDeathEvent event) {
+        event.getDrops().clear();
         if (!VillagerMinigame.gameStarted) return;
         event.deathMessage(Component.empty());
         event.getPlayer().setGameMode(GameMode.SPECTATOR);
@@ -65,18 +70,39 @@ public class EventManager implements Listener
 
     @EventHandler
     public void OnPlayerInteract(PlayerInteractEvent event) {
-        if (!VillagerMinigame.gameStarted && !VillagerMinigame.decisionStarted) return;
         Player player = event.getPlayer();
         Team murdererTeam = scoreboard.getTeam("Murderer");
-        if (player.getInventory().getItemInMainHand().getType() == Material.EMERALD) {
+        if (player.getInventory().getItemInMainHand().getType() == Material.TOTEM_OF_UNDYING && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
             player.getInventory().removeItem(player.getInventory().getItemInMainHand());
+            new BukkitRunnable() {
+                int i = 0;
+                @Override
+                public void run() {
+                    if (i == 40) { cancel(); return; }
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        if (murdererTeam.hasPlayer(p) || p.getGameMode() == GameMode.SPECTATOR) continue;
+                        world.spawnParticle(Particle.DUST, p.getLocation().add(new Location(world, 0f, 0.6f, 0f)), 2, new Particle.DustOptions(Color.YELLOW, 2f));
+                    }
+                    i++;
+                }
+            }.runTaskTimer(VillagerMinigame.plugin, 0L, 2L);
             for (Player p : Bukkit.getOnlinePlayers()) {
-                if (murdererTeam.hasPlayer(p)) continue;
-                world.spawnParticle(Particle.DUST_COLOR_TRANSITION, player.getLocation(), 10);
-                world.playSound(p.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_0, 2, 2);
-                world.sendMessage(Component.text("우민의 패왕색 패기로 인해 가짜 주민들이 지렸습니다!", NamedTextColor.GOLD));
+                world.playSound(p.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_4, 1f, 2f);
             }
+            world.sendMessage(Component.text("우민이 토템을 사용했습니다!", NamedTextColor.GOLD));
         }
+    }
+
+    @EventHandler
+    public void OnEntityResurrect(EntityResurrectEvent event) {
+        if (event.getEntity() instanceof Player) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void OnPlayerDropItem(PlayerDropItemEvent event) {
+        event.setCancelled(true);
     }
 
     @EventHandler

@@ -28,17 +28,29 @@ import java.util.Random;
 public class GameManager
 {
     World world = Bukkit.getWorld("world");
+
+    public void Test() {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            ItemStack emerald = new ItemStack(Material.TOTEM_OF_UNDYING);
+            ItemMeta meta = emerald.getItemMeta();
+            meta.displayName(Component.text("설사의 토템", NamedTextColor.GOLD));
+            meta.lore(List.of(Component.text("우클릭으로 사용", NamedTextColor.WHITE)));
+            emerald.setItemMeta(meta);
+            p.getInventory().addItem(emerald);
+        }
+    }
+
     public void PlayGame(CommandSender sender)
     {
         if (VillagerMinigame.gameStarted) { sender.sendMessage(Component.text("이미 시작함.", NamedTextColor.RED)); return; }
         if (Bukkit.getOnlinePlayers().size() < 2) {
-            sender.sendMessage(Component.text("온라인 플레이어가 최소 2명 있어야 함.", NamedTextColor.RED));
+            sender.sendMessage(Component.text("온라인 플레이어가 최소 2명 있어야 합니다.", NamedTextColor.RED));
             return;
         } else if (VillagerMinigame.murdererCount >= Bukkit.getOnlinePlayers().size()) {
-            sender.sendMessage(Component.text("온라인 플레이어 수는 murderer 수보다 커야함.", NamedTextColor.RED));
+            sender.sendMessage(Component.text("온라인 플레이어 수는 murderer 수보다 커야 합니다.", NamedTextColor.RED));
             return;
         } else if (VillagerMinigame.worldBorderSettings == null) {
-            sender.sendMessage(Component.text("size 가 null 임.", NamedTextColor.RED));
+            sender.sendMessage(Component.text("월드보더 크기가 정해지지 않았습니다.", NamedTextColor.RED));
             return;
         }
 
@@ -60,6 +72,7 @@ public class GameManager
         world.getWorldBorder().setCenter(new Location(world, 0f, 0f,0f));
         world.getWorldBorder().setSize(10000);
         world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, true);
+        world.setTime(1000);
         for (int i = 0; i < players.size(); i++) {
             double angle = 360f / (double)players.size() * i;
             double x = center.getX() + Math.cos(angle * Math.PI / 180f) * 4f;
@@ -72,6 +85,8 @@ public class GameManager
             player.setWalkSpeed(0f);
             player.clearActivePotionEffects();
             civilianTeam.addEntity(player);
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, Integer.MAX_VALUE, 4, false, false));
+            player.getAttribute(Attribute.JUMP_STRENGTH).setBaseValue(0f);
         }
 
         Objective murdererHp = scoreboard.getObjective("murdererHealth");
@@ -168,6 +183,10 @@ public class GameManager
                                 case VillagerMinigame.WorldBorderSettings.MEDIUM -> location.add(random.nextInt(40) - 20, 0, random.nextInt(40) - 20);
                                 case VillagerMinigame.WorldBorderSettings.LARGE -> location.add(random.nextInt(60) - 30, 0, random.nextInt(60) - 30);
                             }
+                            if (location.toHighestLocation().getY() > -57.0f) {
+                                location = world.getWorldBorder().getCenter();
+                                location.add(random.nextInt(4) - 2, 0, random.nextInt(4) - 2);
+                            }
                             Villager villager = world.spawn(location.toHighestLocation().add(new Location(world, 0.0f, 1.0f, 0.0f)), Villager.class);
                             villager.getAttribute(Attribute.MAX_HEALTH).setBaseValue(1.0f);
                         }
@@ -179,8 +198,9 @@ public class GameManager
                         world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, false);
                         for (Player player : players) {
                             player.setWalkSpeed(0.2f);
-                            player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, VillagerMinigame.gameLength * 20, 0, false, false));
+                            player.getAttribute(Attribute.JUMP_STRENGTH).setBaseValue(0.42f);
                             if (murdererIndices.contains(players.indexOf(player))) {
+                                scoreboard.getObjective("murdererHealth").getScore(player).setScore(10);
                                 player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(10.0f);
                                 player.setHealthScale(10.0f);
                                 player.teleport(world.getWorldBorder().getCenter().toHighestLocation().add(new Location(world, 0.0f, 200f, 0.0f)));
@@ -207,7 +227,7 @@ public class GameManager
                             player.getAttribute(Attribute.SCALE).setBaseValue(0.99f);
                             player.setHealthScale(2.0f);
                             player.teleport(world.getWorldBorder().getCenter().toHighestLocation().add(new Location(world, 0.0f, 1.0f, 0.0f)));
-                            player.showTitle(Title.title(Component.text(""), Component.text("당신은 주민입니다."), 10, 60, 10));
+                            player.showTitle(Title.title(Component.text(""), Component.text("당신은 가짜 주민입니다."), 10, 60, 10));
                         }
                         SetWorldBorder(null, null);
                         step ++;
@@ -230,9 +250,10 @@ public class GameManager
                             if (murdererIndices.contains(players.indexOf(player))) {
                                 player.teleport(world.getWorldBorder().getCenter().toHighestLocation().add(new Location(world, 0.0f, 1.0f, 0.0f)));
                                 player.getInventory().addItem(new ItemStack(Material.IRON_AXE));
-                                ItemStack emerald = new ItemStack(Material.EMERALD);
+                                ItemStack emerald = new ItemStack(Material.TOTEM_OF_UNDYING);
                                 ItemMeta meta = emerald.getItemMeta();
-                                meta.displayName(Component.text("패왕색 패기"));
+                                meta.displayName(Component.text("설사의 토템", NamedTextColor.GOLD));
+                                meta.lore(List.of(Component.text("우클릭으로 사용", NamedTextColor.WHITE)));
                                 emerald.setItemMeta(meta);
                                 player.getInventory().addItem(emerald);
                                 player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, VillagerMinigame.gameLength * 20, 0, false, false));
@@ -258,12 +279,12 @@ public class GameManager
                             step ++;
                         }
 
-                        if (tick == 600) {
+                        if (VillagerMinigame.gameLength * 20 - tick == 600) {
                             for (Entity entity : world.getEntities()) {
                                 if (!(entity instanceof Villager)) continue;
                                 ((Villager)entity).addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 600, 0, false, false));
-                                world.sendMessage(Component.text("모든 주민이 발광합니다! ( 30초 남음 )", NamedTextColor.GOLD));
                             }
+                            world.sendMessage(Component.text("모든 주민이 발광합니다 ( 30초 남음 )", NamedTextColor.GOLD));
                         }
                     }
                     default -> {    // 게임 종료
@@ -311,6 +332,7 @@ public class GameManager
             player.clearActivePotionEffects();
             player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(20.0f);
             player.getAttribute(Attribute.MOVEMENT_SPEED).setBaseValue(0.1f);
+            player.getAttribute(Attribute.JUMP_STRENGTH).setBaseValue(0.42f);
             player.setHealthScale(20.0f);
             player.setGameMode(GameMode.SPECTATOR);
         }
@@ -320,12 +342,12 @@ public class GameManager
     {
         int value;
         try { value = Integer.parseInt(input); } catch (Exception e) {
-            sender.sendMessage(Component.text("Invalid input", NamedTextColor.RED));
+            sender.sendMessage(Component.text("유효하지 않은 입력입니다.", NamedTextColor.RED));
             return;
         }
-        if (!(value >= 30 && value <= 600)) { sender.sendMessage(Component.text("Invalid game length ( 30 - 600 )", NamedTextColor.RED)); return; }
+        if (!(value >= 30 && value <= 1200)) { sender.sendMessage(Component.text("제한된 범위 밖의 값입니다. ( 30 - 1200 (단위 : 초))", NamedTextColor.RED)); return; }
         VillagerMinigame.gameLength = value;
-        sender.sendMessage(Component.text("Game length set : " + value));
+        sender.sendMessage(Component.text("게임 시간이 설정되었습니다 : " + value));
     }
 
     public void SetWorldBorder(CommandSender sender, String input)
@@ -359,7 +381,7 @@ public class GameManager
         };
 
         if (setting == null) {
-            sender.sendMessage(Component.text("Invalid world border size", NamedTextColor.RED));
+            sender.sendMessage(Component.text("유효하지 않은 크기입니다.", NamedTextColor.RED));
             return;
         }
 
@@ -381,30 +403,30 @@ public class GameManager
         world.getWorldBorder().setSize(size);
         world.getWorldBorder().setCenter(location);
         VillagerMinigame.worldBorderSettings = setting;
-        sender.sendMessage(Component.text("Border size set : " + VillagerMinigame.worldBorderSettings));
+        sender.sendMessage(Component.text("월드보더 크기가 설정되었습니다 : " + VillagerMinigame.worldBorderSettings));
     }
 
     public void SetMurdererCount(CommandSender sender, String input)
     {
         int value;
         try { value = Integer.parseInt(input); } catch (Exception e) {
-            sender.sendMessage(Component.text("Invalid input", NamedTextColor.RED));
+            sender.sendMessage(Component.text("유효하지 않은 입력입니다.", NamedTextColor.RED));
             return;
         }
-        if (!(value >= 1 && value <= 10)) { sender.sendMessage(Component.text("Invalid murderer count ( 1 - 10 )", NamedTextColor.RED)); return; }
+        if (value < 1) { sender.sendMessage(Component.text("적어도 1명의 murderer 가 있어야 합니다.", NamedTextColor.RED)); return; }
         VillagerMinigame.murdererCount = value;
-        sender.sendMessage(Component.text("Murderer count set : " + VillagerMinigame.murdererCount));
+        sender.sendMessage(Component.text("우민 수가 설정되었습니다 : " + VillagerMinigame.murdererCount));
     }
 
     public void SetVillagerCount(CommandSender sender, String input)
     {
         int value;
         try { value = Integer.parseInt(input); } catch (Exception e) {
-            sender.sendMessage(Component.text("Invalid input", NamedTextColor.RED));
+            sender.sendMessage(Component.text("유효하지 않은 입력입니다.", NamedTextColor.RED));
             return;
         }
-        if (!(value >= 0 && value <= 100)) { sender.sendMessage(Component.text("Invalid villager count ( 0 - 100 )", NamedTextColor.RED)); return; }
+        if (!(value >= 0 && value <= 100)) { sender.sendMessage(Component.text("제한된 범위 밖의 값입니다. ( 0 - 100 )", NamedTextColor.RED)); return; }
         VillagerMinigame.villagerCount = value;
-        sender.sendMessage(Component.text("Villager count set : " + VillagerMinigame.villagerCount));
+        sender.sendMessage(Component.text("주민 수가 설정되었습니다 : " + VillagerMinigame.villagerCount));
     }
 }

@@ -34,6 +34,8 @@ public class CommandManager implements CommandExecutor, TabCompleter
                 world.sendMessage(Component.text("Murderer count: " + VillagerMinigame.murdererCount, NamedTextColor.GREEN));
             } else if (args[0].equalsIgnoreCase("villagers")) {
                 world.sendMessage(Component.text("Villager count: " + VillagerMinigame.villagerCount, NamedTextColor.GREEN));
+            } else if (args[0].equalsIgnoreCase("test")) {
+                VillagerMinigame.gameManager.Test();
             }
         }
         if (args.length == 2) {
